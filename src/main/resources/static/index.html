@@ -13,7 +13,7 @@
 <noscript><h2 style="color: #ff0000">Seems your browser doesn't support Javascript! Websocket relies on Javascript being
     enabled. Please enable Javascript and reload this page!</h2></noscript>
 <div id="main-content" class="container">
-    <div class="col-md-6">
+    <div id="joinStartForm" class="col-md-6">
         <form class="form-inline">
             <div class="form-group">
                 <label for="name">Voer je naam in als je mee wilt doen</label>
@@ -23,18 +23,31 @@
             <button id="startGame" class="btn btn-default" type="submit">Start spel</button>
         </form>
     </div>
-</div>
-<div class="row">
-    <div class="col-md-12">
-        <table id="conversation" class="table table-striped">
-            <thead>
-            <tr>
-                <th>Berichten</th>
-            </tr>
-            </thead>
-            <tbody id="messages">
-            </tbody>
-        </table>
+    <div id="player-hand" class="row" hidden>
+        <div class="col-md-12">
+            <table id="hand" class="table table-striped">
+                <thead>
+                <tr>
+                    <th>Kaarten</th>
+                </tr>
+                </thead>
+                <tbody id="cards">
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12">
+            <table id="conversation" class="table table-striped">
+                <thead>
+                <tr>
+                    <th>Berichten</th>
+                </tr>
+                </thead>
+                <tbody id="messages">
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 </body>

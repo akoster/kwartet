@@ -17,11 +17,14 @@ function connect() {
   stompClient.connect({}, function(frame) {
     setConnected(true);
     console.log('Connected: ' + frame);
-    stompClient.subscribe('/topic', function(greeting) {
-      showMessage(JSON.parse(greeting.body).content);
+    stompClient.subscribe('/topic/messages', function(message) {
+      showMessage(JSON.parse(message.body).content);
     });
-    stompClient.subscribe('/user/topic', function(greeting) {
-      showMessage(JSON.parse(greeting.body).content);
+    stompClient.subscribe('/user/topic/messages', function(message) {
+      showUserMessage(JSON.parse(message.body).content);
+    });
+    stompClient.subscribe('/user/topic/player', function(player) {
+      showPlayer(JSON.parse(player.body));
     });
   });
 }
@@ -42,8 +45,23 @@ function startGame() {
   stompClient.send('/app/startGame', {}, 'START');
 }
 
-function showMessage(message) {
-  $('#messages').append('<tr><td>' + message + '</td></tr>');
+function showMessage(content) {
+  $('#messages').append('<tr><td>' + content + '</td></tr>');
+  if (content.includes("Spel gestart")) {
+    $('#joinStartForm').hide();
+    $('#player-hand').show();
+  }
+}
+
+function showUserMessage(content) {
+  $('#messages').append('<tr><td><b>' + content + '</b></td></tr>');
+}
+
+function showPlayer(player) {
+  for (i in player.cards) {
+    card = player.cards[i];
+    $('#player-hand').append('<tr><td>' + card.times + ' x ' + card.table + ' = ' + card.outcome + '</td></tr>');
+  }
 }
 
 $(function() {
