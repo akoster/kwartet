@@ -1,13 +1,17 @@
 package nl.nuggit.kwartet.model;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 
 public class Player {
 
+    private final String id;
     private String name;
-    private String id;
-    private List<Card> cards = new ArrayList<>();
+    private Set<Card> cards = new TreeSet<>();
+
+    public Player(String id) {
+        this.id = id;
+    }
 
     public String getName() {
         return name;
@@ -21,11 +25,7 @@ public class Player {
         return id;
     }
 
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public List<Card> getCards() {
+    public Set<Card> getCards() {
         return cards;
     }
 
@@ -33,4 +33,5 @@ public class Player {
     public String toString() {
         return name;
     }
+
 }

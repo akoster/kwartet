@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-    <title>Hello WebSocket</title>
+    <title>Tafelkwartet</title>
     <link href="/webjars/bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <link href="/main.css" rel="stylesheet">
     <script src="/webjars/jquery/jquery.min.js"></script>
@@ -13,19 +13,50 @@
 <noscript><h2 style="color: #ff0000">Seems your browser doesn't support Javascript! Websocket relies on Javascript being
     enabled. Please enable Javascript and reload this page!</h2></noscript>
 <div id="main-content" class="container">
-    <div id="joinStartForm" class="col-md-6">
+
+    <div id="start-panel" class="col-md-6">
         <form class="form-inline">
             <div class="form-group">
                 <label for="name">Voer je naam in als je mee wilt doen</label>
-                <input type="text" id="name" class="form-control" placeholder="Je naam...">
+                <input type="text" id="name" class="form-control" placeholder="Tik je naam">
             </div>
-            <button id="joinGame" class="btn btn-default" type="submit">Ik wil meedoen</button>
-            <button id="startGame" class="btn btn-default" type="submit">Start spel</button>
+            <button id="join" class="btn btn-default" type="submit">Meedoen</button>
+            <button id="start" class="btn btn-default" type="submit">Start spel</button>
         </form>
     </div>
-    <div id="player-hand" class="row" hidden>
+
+    <div id="turn-panel" class="col-md-6" hidden>
+        <form class="form-inline">
+            <div class="form-group">
+                <label for="card">Welke kaart wil je vragen?</label>
+                <input type="text" id="card" class="form-control" placeholder="Tik de kaart">
+            </div>
+            <div class="form-group">
+                <label for="opponent">Aan wie?</label>
+                <select id="opponent" class="form-control" placeholder="Kies een speler">
+                </select>
+            </div>
+            <button id="ask" class="btn btn-default" type="submit">Vragen</button>
+        </form>
+    </div>
+
+    <div id="players-panel" class="row" hidden>
         <div class="col-md-12">
-            <table id="hand" class="table table-striped">
+            <table id="players-table" class="table table-striped">
+                <thead>
+                <tr>
+                    <th>Spelers</th>
+                </tr>
+                </thead>
+                <tbody id="players">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="cards-panel" class="row" hidden>
+        <div class="col-md-12">
+            <table id="cards-table" class="table table-striped">
                 <thead>
                 <tr>
                     <th>Kaarten</th>
@@ -36,9 +67,10 @@
             </table>
         </div>
     </div>
-    <div class="row">
+
+    <div id="messages-panel" class="row">
         <div class="col-md-12">
-            <table id="conversation" class="table table-striped">
+            <table id="messages-table" class="table table-striped">
                 <thead>
                 <tr>
                     <th>Berichten</th>
@@ -49,6 +81,7 @@
             </table>
         </div>
     </div>
+
 </div>
 </body>
 </html>
