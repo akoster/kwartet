@@ -1,6 +1,6 @@
 package nl.nuggit.kwartet.model;
 
-public class Turn {
+public class Ask {
     private String card;
     private String opponent;
 

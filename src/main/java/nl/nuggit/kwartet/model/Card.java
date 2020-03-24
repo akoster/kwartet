@@ -1,6 +1,6 @@
 package nl.nuggit.kwartet.model;
 
-public class Card implements Comparable<Card>{
+public class Card implements Comparable<Card> {
 
     private String times;
     private String table;
@@ -37,5 +37,20 @@ public class Card implements Comparable<Card>{
             result = times.compareTo(other.times);
         }
         return result;
+    }
+
+    public String getDescription() {
+        return String.format("%s x %s = %s", times, table, outcome);
+    }
+
+    public static Card fromDescription(String description) {
+        String[] parts = description.trim().split("\\s+");
+        Card card = new Card();
+        if (parts.length >= 4) {
+            card.times = parts[0];
+            card.table = parts[2];
+            card.outcome = parts[4];
+        }
+        return card;
     }
 }

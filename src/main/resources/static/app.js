@@ -16,32 +16,28 @@ function ask() {
   $('#turn-panel').hide();
 }
 
-function onMessage(message, isPrivate) {
+function onMessage(message) {
   $('#messages').
-      append('<tr><td>' + decorate(message.content, isPrivate) + '</td></tr>');
+      append('<tr><td>' + message.content + '</td></tr>');
   if (message.type === 'START') {
     $('#join').prop('disabled', true);
     $('#start-panel').hide();
+    populateOpponentSelect();
   }
   if (message.type === 'YOUR_TURN') {
     $('#turn-panel').show();
-    var $opponents = $('#opponent');
-    $.each(playerNames, function() {
-      if (!isCurrentPlayer(this)) {
-        $opponents.append($('<option />').val(this).text(this));
-      }
-    });
   }
 }
 
 function onPlayer() {
   $('#cards-panel').show();
   $('#name').val(thisPlayer.name);
+  let $cards = $('#cards');
+  $cards.html('');
   for (i in thisPlayer.cards) {
     let card = thisPlayer.cards[i];
-    $('#cards').
-        append('<tr><td>' + card.times + ' x ' + card.table + ' = ' +
-            card.outcome + '</td></tr>');
+    $cards.
+        append('<tr><td>' + card.description + '</td></tr>');
   }
 }
 
@@ -51,20 +47,25 @@ function onPlayerNames() {
   $players.html('');
   for (i in playerNames) {
     let name = playerNames[i];
-    $players.append(
-        '<tr><td>' + decorate(name, isCurrentPlayer(name)) + '</td></tr>');
+    if (isCurrentPlayer(name)) {
+      name = '<b>' + name + '</b>';
+    }
+    $players.append('<tr><td>' + name + '</td></tr>');
   }
+}
+
+function populateOpponentSelect() {
+  var $opponents = $('#opponent');
+  $opponents.html('');
+  $.each(playerNames, function() {
+    if (!isCurrentPlayer(this)) {
+      $opponents.append($('<option />').val(this).text(this));
+    }
+  });
 }
 
 function isCurrentPlayer(name) {
-  return thisPlayer != null && name === thisPlayer.name;
-}
-
-function decorate(content, mustMark) {
-  if (mustMark) {
-    content = '<b>' + content + '</b>';
-  }
-  return content;
+  return thisPlayer != null && name == thisPlayer.name;
 }
 
 $(function() {
@@ -90,10 +91,10 @@ function connect() {
   stompClient.connect({}, function(frame) {
     console.log('Connected: ' + frame);
     stompClient.subscribe('/topic/message', function(message) {
-      onMessage(JSON.parse(message.body), false);
+      onMessage(JSON.parse(message.body));
     });
     stompClient.subscribe('/user/topic/message', function(message) {
-      onMessage(JSON.parse(message.body), true);
+      onMessage(JSON.parse(message.body));
     });
     stompClient.subscribe('/user/topic/player', function(message) {
       thisPlayer = JSON.parse(message.body);

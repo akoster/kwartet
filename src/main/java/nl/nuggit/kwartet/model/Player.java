@@ -2,6 +2,7 @@ package nl.nuggit.kwartet.model;
 
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Stream;
 
 public class Player {
 
@@ -25,8 +26,16 @@ public class Player {
         return id;
     }
 
-    public Set<Card> getCards() {
-        return cards;
+    public Stream<Card> getCards() {
+        return cards.stream();
+    }
+
+    public void addCard(Card card) {
+        cards.add(card);
+    }
+
+    public boolean removeCard(Card card) {
+        return cards.remove(card);
     }
 
     @Override

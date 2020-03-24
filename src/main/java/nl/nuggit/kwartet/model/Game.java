@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import nl.nuggit.kwartet.exception.CannotJoinGameException;
 import nl.nuggit.kwartet.exception.NameTakenException;
@@ -80,6 +81,10 @@ public class Game {
         return players.stream().filter(player -> player.getId().equals(id)).findAny();
     }
 
+    public Optional<Player> findPlayerByName(String name) {
+        return players.stream().filter(player -> player.getName().equals(name)).findAny();
+    }
+
     public Player getCurrentPlayer() {
         if (state != State.STARTED) {
             throw new IllegalStateException("Game not started yet");
@@ -87,20 +92,43 @@ public class Game {
         return players.get(currentPlayerIndex);
     }
 
-    public List<Player> getPlayers() {
-        return players;
+    public void setCurrentPlayer(Player player) {
+        if (state != State.STARTED) {
+            throw new IllegalStateException("Game not started yet");
+        }
+        currentPlayerIndex = players.indexOf(player);
+    }
+
+    public Stream<Player> getPlayers() {
+        return players.stream();
     }
 
     private void deal(int numberOfCards) {
         for (Player player : players) {
             for (int i = 0; i < numberOfCards; i++) {
-                player.getCards().add(deck.getRandomCard());
+                player.addCard(deck.getRandomCard().orElseThrow(() -> new IllegalStateException("Not enough cards")));
             }
         }
     }
 
     private boolean isNameTaken(Player player) {
         return players.stream().anyMatch(p -> p.getName().equals(player.getName()));
+    }
+
+    public boolean askCardFrom(Player player, String cardDescription, Player opponent) {
+        Optional<Card> opponentCard = opponent.getCards()
+                .filter(card -> card.getDescription().equals(cardDescription))
+                .findAny();
+        if (opponentCard.isPresent()) {
+            Card card = opponentCard.get();
+            opponent.removeCard(card);
+            player.addCard(card);
+            return true;
+        } else {
+            deck.getRandomCard().ifPresent(player::addCard);
+            currentPlayerIndex = players.indexOf(opponent);
+            return false;
+        }
     }
 
     public enum State {

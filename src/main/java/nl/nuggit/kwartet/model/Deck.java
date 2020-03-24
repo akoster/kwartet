@@ -2,6 +2,7 @@ package nl.nuggit.kwartet.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class Deck {
 
@@ -25,10 +26,19 @@ public class Deck {
         }
     }
 
-    public Card getRandomCard() {
+    public Optional<Card> getRandomCard() {
         if (cards.size() < 1) {
-            throw new IllegalStateException("No more cards");
+            return Optional.empty();
         }
-        return cards.get((int) (Math.random() * cards.size()));
+        int index = (int) (Math.random() * cards.size());
+        return Optional.of(cards.get(index));
+    }
+
+    public static boolean isValid(Card card) {
+        int times = Integer.parseInt(card.getTimes());
+        int table = Integer.parseInt(card.getTable());
+        int outcome = Integer.parseInt(card.getOutcome());
+        return TIMES_FROM <= times && TIMES_TO >= times && TABLE_FROM <= table && TABLE_TO >= table && outcome == (times
+                * table);
     }
 }
