@@ -6,6 +6,16 @@ public class Card implements Comparable<Card> {
     private String table;
     private String outcome;
 
+    public Card(int table, int times) {
+        this.table = String.valueOf(table);
+        this.times = String.valueOf(times);
+        this.outcome = (String.valueOf(table * times));
+    }
+
+    public Card() {
+        // default
+    }
+
     public String getTimes() {
         return times;
     }
@@ -52,5 +62,17 @@ public class Card implements Comparable<Card> {
             card.outcome = parts[4];
         }
         return card;
+    }
+
+    public boolean inSetWith(Card other) {
+        try {
+            int thisTimes = Integer.parseInt(times);
+            int otherTimes = Integer.parseInt(other.times);
+            boolean sameTimesSet = (thisTimes <= 4 && otherTimes <= 4) || (thisTimes >= 5 && otherTimes >= 5);
+            boolean sameTable = other.getTable().equals(table);
+            return sameTable && sameTimesSet;
+        } catch (NumberFormatException e) {
+            return false;
+        }
     }
 }

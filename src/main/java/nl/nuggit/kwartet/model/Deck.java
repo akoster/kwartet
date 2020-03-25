@@ -17,28 +17,29 @@ public class Deck {
     public Deck() {
         for (int table = TABLE_FROM; table < TABLE_TO; table++) {
             for (int times = TIMES_FROM; times < TIMES_TO; times++) {
-                Card card = new Card();
-                card.setTable(String.valueOf(table));
-                card.setTimes(String.valueOf(times));
-                card.setOutcome(String.valueOf(table * times));
+                Card card = new Card(table, times);
                 cards.add(card);
             }
         }
     }
 
-    public Optional<Card> getRandomCard() {
+    public Optional<Card> drawRandomCard() {
         if (cards.size() < 1) {
             return Optional.empty();
         }
         int index = (int) (Math.random() * cards.size());
-        return Optional.of(cards.get(index));
+        return Optional.of(cards.remove(index));
     }
 
     public static boolean isValid(Card card) {
-        int times = Integer.parseInt(card.getTimes());
-        int table = Integer.parseInt(card.getTable());
-        int outcome = Integer.parseInt(card.getOutcome());
-        return TIMES_FROM <= times && TIMES_TO >= times && TABLE_FROM <= table && TABLE_TO >= table && outcome == (times
-                * table);
+        try {
+            int times = Integer.parseInt(card.getTimes());
+            int table = Integer.parseInt(card.getTable());
+            int outcome = Integer.parseInt(card.getOutcome());
+            return TIMES_FROM <= times && TIMES_TO >= times && TABLE_FROM <= table && TABLE_TO >= table && outcome == (
+                    times * table);
+        } catch (NumberFormatException e) {
+            return false;
+        }
     }
 }

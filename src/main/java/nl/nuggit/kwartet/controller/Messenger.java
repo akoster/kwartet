@@ -1,11 +1,8 @@
 package nl.nuggit.kwartet.controller;
 
-import java.util.List;
-
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
-@Controller
 public class Messenger {
 
     private SimpMessagingTemplate template;
@@ -14,11 +11,13 @@ public class Messenger {
         this.template = template;
     }
 
-    public void sendToUser(String id, Object payload) {
-        this.template.convertAndSendToUser(id, destination(payload), payload);
+    public void sendTo(Object payload, String... ids) {
+        for (String id : ids) {
+            this.template.convertAndSendToUser(id, destination(payload), payload);
+        }
     }
 
-    public void sendToAll(Object payload) {
+    public void broadcast(Object payload) {
         this.template.convertAndSend(destination(payload), payload);
     }
 

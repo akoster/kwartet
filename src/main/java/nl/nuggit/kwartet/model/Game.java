@@ -106,7 +106,7 @@ public class Game {
     private void deal(int numberOfCards) {
         for (Player player : players) {
             for (int i = 0; i < numberOfCards; i++) {
-                player.addCard(deck.getRandomCard().orElseThrow(() -> new IllegalStateException("Not enough cards")));
+                player.addCard(deck.drawRandomCard().orElseThrow(() -> new IllegalStateException("Not enough cards")));
             }
         }
     }
@@ -116,19 +116,28 @@ public class Game {
     }
 
     public boolean askCardFrom(Player player, String cardDescription, Player opponent) {
-        Optional<Card> opponentCard = opponent.getCards()
-                .filter(card -> card.getDescription().equals(cardDescription))
-                .findAny();
-        if (opponentCard.isPresent()) {
-            Card card = opponentCard.get();
-            opponent.removeCard(card);
-            player.addCard(card);
-            return true;
+        Optional<Card> opponentCard = findCard(cardDescription, opponent);
+        boolean success = opponentCard.isPresent();
+        if (success) {
+            opponentGivesCard(player, opponent, opponentCard.get());
         } else {
-            deck.getRandomCard().ifPresent(player::addCard);
-            currentPlayerIndex = players.indexOf(opponent);
-            return false;
+            opponentDoesNotHaveCard(player, opponent);
         }
+        return success;
+    }
+
+    private Optional<Card> findCard(String cardDescription, Player opponent) {
+        return opponent.getCards().filter(card -> card.getDescription().equals(cardDescription)).findAny();
+    }
+
+    private void opponentGivesCard(Player player, Player opponent, Card card) {
+        opponent.removeCard(card);
+        player.addCard(card);
+    }
+
+    private void opponentDoesNotHaveCard(Player player, Player opponent) {
+        deck.drawRandomCard().ifPresent(player::addCard);
+        currentPlayerIndex = players.indexOf(opponent);
     }
 
     public enum State {

@@ -18,7 +18,7 @@ function ask() {
 
 function onMessage(message) {
   $('#messages').
-      append('<tr><td>' + message.content + '</td></tr>');
+      prepend('<tr><td>' + message.content + '</td></tr>');
   if (message.type === 'START') {
     $('#join').prop('disabled', true);
     $('#start-panel').hide();
@@ -26,6 +26,9 @@ function onMessage(message) {
   }
   if (message.type === 'YOUR_TURN') {
     $('#turn-panel').show();
+  }
+  if (message.type === 'RESTART') {
+    restart();
   }
 }
 
@@ -107,6 +110,16 @@ function connect() {
   });
 }
 
+function restart() {
+  thisPlayer = null;
+  playerNames = null;
+  $('#start-panel').show();
+  $('#turn-panel').hide();
+  $('#cards-panel').hide();
+  $('#players-panel').hide();
+  $('#join').prop('disabled', false);
+}
+
 window.onbeforeunload = function() {
   if (stompClient !== null) {
     stompClient.send('/app/leave');
@@ -115,3 +128,5 @@ window.onbeforeunload = function() {
   console.log('Disconnected');
   return 'bye';
 };
+
+

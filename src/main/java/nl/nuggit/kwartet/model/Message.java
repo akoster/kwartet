@@ -25,6 +25,7 @@ public class Message {
     public enum Type {
         MESSAGE,
         START,
-        YOUR_TURN
+        YOUR_TURN,
+        RESTART
     }
 }

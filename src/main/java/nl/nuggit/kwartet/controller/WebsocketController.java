@@ -1,7 +1,6 @@
 package nl.nuggit.kwartet.controller;
 
 import java.security.Principal;
-import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -11,7 +10,6 @@ import nl.nuggit.kwartet.model.Ask;
 import nl.nuggit.kwartet.model.Card;
 import nl.nuggit.kwartet.model.Deck;
 import nl.nuggit.kwartet.model.Game;
-import nl.nuggit.kwartet.model.Message;
 import nl.nuggit.kwartet.model.Player;
 import nl.nuggit.kwartet.model.PlayerNames;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -20,11 +18,11 @@ import org.springframework.stereotype.Controller;
 @Controller
 public class WebsocketController {
 
-    private Messenger messenger;
+    private GameMessenger gameMessenger;
     private Game game;
 
-    public WebsocketController(Messenger messenger, Game game) {
-        this.messenger = messenger;
+    public WebsocketController(GameMessenger gameMessenger, Game game) {
+        this.gameMessenger = gameMessenger;
         this.game = game;
     }
 
@@ -38,13 +36,8 @@ public class WebsocketController {
         } else {
             player = addNewPlayer(name, principal);
         }
-        messenger.sendToUser(player.getId(), player);
+        gameMessenger.sendTo(player, player.getId());
         updatePlayerNames();
-    }
-
-    private void updatePlayerNames() {
-        PlayerNames playerNames = new PlayerNames(game.getPlayers().map(Player::getName).collect(Collectors.toList()));
-        game.getPlayers().forEach(p -> messenger.sendToUser(p.getId(), playerNames));
     }
 
     private Player addNewPlayer(String name, Principal principal) {
@@ -53,9 +46,9 @@ public class WebsocketController {
         try {
             game.join(player);
         } catch (NameTakenException e) {
-            messenger.sendToUser(player.getId(), new Message(String.format("De naam '%s' is al bezet", name)));
+            gameMessenger.nameAlreadyTaken(name, player);
         } catch (CannotJoinGameException e) {
-            messenger.sendToUser(player.getId(), new Message("Je kunt op dit ogenblik niet meedoen"));
+            gameMessenger.cannotJoinGame(player);
         }
         return player;
     }
@@ -66,8 +59,7 @@ public class WebsocketController {
             if (game.getState() == Game.State.JOINING) {
                 game.leave(player);
             } else {
-                messenger.sendToAll(new Message(Message.Type.MESSAGE,
-                        String.format("Het spel kan niet verder gaan zonder %s", player.getName())));
+                gameMessenger.gameHaltedBecausePlayerLeft(player);
                 game.init();
             }
             updatePlayerNames();
@@ -81,13 +73,8 @@ public class WebsocketController {
 
     private void start(Player player) {
         game.start();
-        messenger.sendToAll(new Message(Message.Type.START, String.format("Spel gestart door %s", player.getName())));
         updatePlayers();
-        messenger.sendToUser(game.getCurrentPlayer().getId(), new Message(Message.Type.YOUR_TURN, "Jij mag beginnen!"));
-    }
-
-    private void updatePlayers() {
-        game.getPlayers().forEach(p -> messenger.sendToUser(p.getId(), p));
+        gameMessenger.gameStarted(player, game.getCurrentPlayer());
     }
 
     @MessageMapping("/ask")
@@ -100,64 +87,40 @@ public class WebsocketController {
     }
 
     private void ask(Ask ask, Player player, Player opponent) {
-        List<String> spectatorIds = getOtherPlayerIds(player, opponent);
-        for (String spectatorId : spectatorIds) {
-            messenger.sendToUser(spectatorId, new Message(
-                    String.format("%s vraagt aan %s om %s", player.getName(), ask.getOpponent(), ask.getCard())));
-        }
+        String[] spectatorIds = getAllPlayerIdsExcept(player, opponent);
+        gameMessenger.cardAsked(ask, player);
         Card askedCard = Card.fromDescription(ask.getCard());
         if (!Deck.isValid(askedCard)) {
             game.setCurrentPlayer(opponent);
-            messenger.sendToAll(new Message(
-                    String.format("%s vroeg een kaart die niet bestaat! Nu is %s aan de beurt", player.getName(),
-                            opponent.getName())));
-        }
-        if (player.getCards().filter(card -> card.getTable().equals(askedCard.getTable())).findAny().isEmpty()) {
+            gameMessenger.playerAskedInvalidCard(player, opponent, spectatorIds);
+        } else if (playerHasNoCardInSameSet(player, askedCard)) {
             game.setCurrentPlayer(opponent);
-            messenger.sendToAll(new Message(
-                    String.format("%s vroeg een kaart waar hij er geen van had! Nu is %s aan de beurt",
-                            player.getName(), opponent.getName())));
-        }
-        boolean success = game.askCardFrom(player, ask.getCard(), opponent);
-        updatePlayers();
-        if (success) {
-            cardAskedSuccessfully(ask, player, opponent, spectatorIds);
+            gameMessenger.playerHasNoCardInAskedSet(player, opponent, spectatorIds);
         } else {
-            cardAskedUnsuccessfully(ask, player, opponent, spectatorIds);
+            boolean success = game.askCardFrom(player, ask.getCard(), opponent);
+            updatePlayers();
+            if (success) {
+                gameMessenger.opponentGivesCard(ask, player, opponent, spectatorIds);
+            } else {
+                gameMessenger.opponentDoesNotHaveCard(ask, player, opponent, spectatorIds);
+            }
         }
     }
 
-    private void cardAskedSuccessfully(Ask ask, Player player, Player opponent, List<String> spectatorIds) {
-        messenger.sendToUser(player.getId(), new Message(Message.Type.YOUR_TURN,
-                String.format("Je hebt de %s van %s gekregen, je mag nog een keer", ask.getCard(),
-                        opponent.getName())));
-        messenger.sendToUser(opponent.getId(), new Message(
-                String.format("%s heeft %s van jou gekregen en mag nog een keer", player.getName(), ask.getCard())));
-        for (String spectatorId : spectatorIds) {
-            messenger.sendToUser(spectatorId, new Message(
-                    String.format("%s kreeg de %s van %s en mag nog een keer", player.getName(), ask.getCard(),
-                            ask.getOpponent())));
-        }
+    private void updatePlayerNames() {
+        PlayerNames playerNames = new PlayerNames(game.getPlayers().map(Player::getName).collect(Collectors.toList()));
+        game.getPlayers().forEach(p -> gameMessenger.sendTo(playerNames, p.getId()));
     }
 
-    private void cardAskedUnsuccessfully(Ask ask, Player player, Player opponent, List<String> spectatorIds) {
-        messenger.sendToUser(player.getId(), new Message(
-                String.format("%s had de %s niet, je beurt is voorbij", opponent.getName(), ask.getCard())));
-        messenger.sendToUser(opponent.getId(), new Message(Message.Type.YOUR_TURN,
-                String.format("%s vroeg de %s maar die heb je niet, nu ben jij aan de beurt", player.getName(),
-                        ask.getCard())));
-        for (String spectatorId : spectatorIds) {
-            messenger.sendToUser(spectatorId, new Message(
-                    String.format("%1$s vroeg de %2$s aan %3$s maar die had hem niet. Nu is %3$s aan de beurt.",
-                            player.getName(), ask.getCard(), ask.getOpponent())));
-        }
+    private void updatePlayers() {
+        game.getPlayers().forEach(p -> gameMessenger.sendTo(p, p.getId()));
     }
 
-    private List<String> getOtherPlayerIds(Player player1, Player player2) {
-        return game.getPlayers()
-                .filter(p -> p != player1 && p != player2)
-                .map(Player::getId)
-                .collect(Collectors.toList());
+    private String[] getAllPlayerIdsExcept(Player player1, Player player2) {
+        return game.getPlayers().filter(p -> p != player1 && p != player2).map(Player::getId).toArray(String[]::new);
     }
 
+    private boolean playerHasNoCardInSameSet(Player player, Card askedCard) {
+        return player.getCards().filter(card -> card.inSetWith(askedCard)).findAny().isEmpty();
+    }
 }
