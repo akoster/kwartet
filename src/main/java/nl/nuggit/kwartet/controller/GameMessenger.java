@@ -1,6 +1,9 @@
 package nl.nuggit.kwartet.controller;
 
+import java.util.List;
+
 import nl.nuggit.kwartet.model.Ask;
+import nl.nuggit.kwartet.model.Card;
 import nl.nuggit.kwartet.model.Message;
 import nl.nuggit.kwartet.model.Player;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -86,4 +89,13 @@ public class GameMessenger extends Messenger {
                 player.getName(), ask.getCard(), ask.getOpponent())), spectatorIds);
     }
 
+    public void playerDrewCard(Player player, Card card) {
+        sendTo(new Message(String.format("Je trok een nieuwe kaart: %s", card)), player.getId());
+    }
+
+    public void playerScoredSets(Player player, List<String> sets) {
+        for (String set : sets) {
+            broadcast(new Message(String.format("%s heeft een kwartet: %s", player.getName(), set)));
+        }
+    }
 }

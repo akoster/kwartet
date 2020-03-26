@@ -1,6 +1,6 @@
 var stompClient = null;
 var thisPlayer = null;
-var playerNames = null;
+var scoreBoard = null;
 
 function join() {
   stompClient.send('/app/join', {}, $('#name').val());
@@ -44,25 +44,26 @@ function onPlayer() {
   }
 }
 
-function onPlayerNames() {
+function onScoreBoard() {
   $('#players-panel').show();
   let $players = $('#players');
   $players.html('');
-  for (i in playerNames) {
-    let name = playerNames[i];
-    if (isCurrentPlayer(name)) {
-      name = '<b>' + name + '</b>';
+  for (i in scoreBoard.scores) {
+    let score = scoreBoard.scores[i];
+    let scoreDisplay = score.name + ' : ' + score.score;
+    if (isCurrentPlayer(score.name)) {
+      scoreDisplay = '<b>' + scoreDisplay + '</b>';
     }
-    $players.append('<tr><td>' + name + '</td></tr>');
+    $players.append('<tr><td>' + scoreDisplay + '</td></tr>');
   }
 }
 
 function populateOpponentSelect() {
   var $opponents = $('#opponent');
   $opponents.html('');
-  $.each(playerNames, function() {
-    if (!isCurrentPlayer(this)) {
-      $opponents.append($('<option />').val(this).text(this));
+  $.each(scoreBoard.scores, function() {
+    if (!isCurrentPlayer(this.name)) {
+      $opponents.append($('<option />').val(this.name).text(this.name));
     }
   });
 }
@@ -103,16 +104,16 @@ function connect() {
       thisPlayer = JSON.parse(message.body);
       onPlayer();
     });
-    stompClient.subscribe('/user/topic/playernames', function(message) {
-      playerNames = JSON.parse(message.body).names;
-      onPlayerNames();
+    stompClient.subscribe('/user/topic/scoreboard', function(message) {
+      scoreBoard = JSON.parse(message.body);
+      onScoreBoard();
     });
   });
 }
 
 function restart() {
   thisPlayer = null;
-  playerNames = null;
+  scoreBoard = null;
   $('#start-panel').show();
   $('#turn-panel').hide();
   $('#cards-panel').hide();

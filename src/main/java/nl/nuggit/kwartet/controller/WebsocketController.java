@@ -1,17 +1,16 @@
 package nl.nuggit.kwartet.controller;
 
 import java.security.Principal;
+import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import nl.nuggit.kwartet.exception.CannotJoinGameException;
 import nl.nuggit.kwartet.exception.NameTakenException;
 import nl.nuggit.kwartet.model.Ask;
 import nl.nuggit.kwartet.model.Card;
-import nl.nuggit.kwartet.model.Deck;
 import nl.nuggit.kwartet.model.Game;
 import nl.nuggit.kwartet.model.Player;
-import nl.nuggit.kwartet.model.PlayerNames;
+import nl.nuggit.kwartet.model.ScoreBoard;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.stereotype.Controller;
 
@@ -37,7 +36,7 @@ public class WebsocketController {
             player = addNewPlayer(name, principal);
         }
         gameMessenger.sendTo(player, player.getId());
-        updatePlayerNames();
+        updateScoreBoard();
     }
 
     private Player addNewPlayer(String name, Principal principal) {
@@ -62,7 +61,7 @@ public class WebsocketController {
                 gameMessenger.gameHaltedBecausePlayerLeft(player);
                 game.init();
             }
-            updatePlayerNames();
+            updateScoreBoard();
         });
     }
 
@@ -89,27 +88,44 @@ public class WebsocketController {
     private void ask(Ask ask, Player player, Player opponent) {
         String[] spectatorIds = getAllPlayerIdsExcept(player, opponent);
         gameMessenger.cardAsked(ask, player);
-        Card askedCard = Card.fromDescription(ask.getCard());
-        if (!Deck.isValid(askedCard)) {
-            game.setCurrentPlayer(opponent);
+        Game.AskResult askResult = game.askCardFrom(player, ask.getCard(), opponent);
+        if (askResult == Game.AskResult.OPPONENT_DOES_NOT_HAVE_CARD) {
+            game.playerDrawsCard(player).ifPresent(card -> {
+                gameMessenger.playerDrewCard(player, card);
+            });
+        }
+        List<String> sets = game.removeSets(player);
+        if (!sets.isEmpty()) {
+            gameMessenger.playerScoredSets(player, sets);
+        }
+        updateScoreBoard();
+        updatePlayers();
+        handleResult(ask, player, opponent, spectatorIds, askResult);
+    }
+
+
+    private void handleResult(Ask ask, Player player, Player opponent, String[] spectatorIds,
+            Game.AskResult askResult) {
+        switch (askResult) {
+        case CARD_DOES_NOT_EXIST:
             gameMessenger.playerAskedInvalidCard(player, opponent, spectatorIds);
-        } else if (playerHasNoCardInSameSet(player, askedCard)) {
-            game.setCurrentPlayer(opponent);
+            break;
+        case PLAYER_HAS_NO_CARD_IN_SAME_SET:
             gameMessenger.playerHasNoCardInAskedSet(player, opponent, spectatorIds);
-        } else {
-            boolean success = game.askCardFrom(player, ask.getCard(), opponent);
-            updatePlayers();
-            if (success) {
-                gameMessenger.opponentGivesCard(ask, player, opponent, spectatorIds);
-            } else {
-                gameMessenger.opponentDoesNotHaveCard(ask, player, opponent, spectatorIds);
-            }
+            break;
+        case OPPONENT_HAS_CARD:
+            gameMessenger.opponentGivesCard(ask, player, opponent, spectatorIds);
+            break;
+        case OPPONENT_DOES_NOT_HAVE_CARD:
+            gameMessenger.opponentDoesNotHaveCard(ask, player, opponent, spectatorIds);
+            break;
+        default:
+            throw new IllegalStateException("Cannot handle AskResult " + askResult);
         }
     }
 
-    private void updatePlayerNames() {
-        PlayerNames playerNames = new PlayerNames(game.getPlayers().map(Player::getName).collect(Collectors.toList()));
-        game.getPlayers().forEach(p -> gameMessenger.sendTo(playerNames, p.getId()));
+    private void updateScoreBoard() {
+        game.getPlayers().forEach(p -> gameMessenger.sendTo(new ScoreBoard(game.getPlayers()), p.getId()));
     }
 
     private void updatePlayers() {
@@ -120,7 +136,4 @@ public class WebsocketController {
         return game.getPlayers().filter(p -> p != player1 && p != player2).map(Player::getId).toArray(String[]::new);
     }
 
-    private boolean playerHasNoCardInSameSet(Player player, Card askedCard) {
-        return player.getCards().filter(card -> card.inSetWith(askedCard)).findAny().isEmpty();
-    }
 }

@@ -115,34 +115,84 @@ public class Game {
         return players.stream().anyMatch(p -> p.getName().equals(player.getName()));
     }
 
-    public boolean askCardFrom(Player player, String cardDescription, Player opponent) {
-        Optional<Card> opponentCard = findCard(cardDescription, opponent);
-        boolean success = opponentCard.isPresent();
-        if (success) {
-            opponentGivesCard(player, opponent, opponentCard.get());
+    public AskResult askCardFrom(Player player, String cardDescription, Player opponent) {
+        AskResult result;
+        Card askedCard = Card.fromDescription(cardDescription);
+        if (!Deck.isValid(askedCard)) {
+            setCurrentPlayer(opponent);
+            result = AskResult.CARD_DOES_NOT_EXIST;
+        } else if (playerHasNoCardInSameSet(player, askedCard)) {
+            setCurrentPlayer(opponent);
+            result = AskResult.PLAYER_HAS_NO_CARD_IN_SAME_SET;
         } else {
-            opponentDoesNotHaveCard(player, opponent);
+            Optional<Card> opponentCard = findCard(cardDescription, opponent);
+            boolean opponentHasCard = opponentCard.isPresent();
+            if (opponentHasCard) {
+                Card card = opponentCard.get();
+                opponent.removeCard(card);
+                player.addCard(card);
+                result = AskResult.OPPONENT_HAS_CARD;
+            } else {
+                currentPlayerIndex = players.indexOf(opponent);
+                result = AskResult.OPPONENT_DOES_NOT_HAVE_CARD;
+            }
         }
-        return success;
+        return result;
+    }
+
+    public Optional<Card> playerDrawsCard(Player player) {
+        Optional<Card> card = deck.drawRandomCard();
+        card.ifPresent(player::addCard);
+        return card;
     }
 
     private Optional<Card> findCard(String cardDescription, Player opponent) {
         return opponent.getCards().filter(card -> card.getDescription().equals(cardDescription)).findAny();
     }
 
-    private void opponentGivesCard(Player player, Player opponent, Card card) {
-        opponent.removeCard(card);
-        player.addCard(card);
+    private boolean playerHasNoCardInSameSet(Player player, Card askedCard) {
+        return player.getCards().filter(card -> card.inSetWith(askedCard)).findAny().isEmpty();
     }
 
-    private void opponentDoesNotHaveCard(Player player, Player opponent) {
-        deck.drawRandomCard().ifPresent(player::addCard);
-        currentPlayerIndex = players.indexOf(opponent);
+    public List<String> removeSets(Player player) {
+        List<String> setDescriptions = new ArrayList<>();
+        List<List<Card>> sets = player.getSets();
+        for (List<Card> set : sets) {
+            setDescriptions.add(removeSet(player, set));
+        }
+        return setDescriptions;
+    }
+
+    private String removeSet(Player player, List<Card> set) {
+        StringBuilder sb = new StringBuilder();
+        String table = set.get(0).getTable();
+        for (Card card : set) {
+            sb.append(removeCard(player, card));
+        }
+        player.increaseScore();
+        sb.deleteCharAt(sb.length() - 1);
+        sb.append(" x ").append(table);
+        return sb.toString();
+    }
+
+    private String removeCard(Player player, Card card) {
+        boolean success = player.removeCard(card);
+        if (!success) {
+            throw new IllegalStateException("Player did not have expected card");
+        }
+        return card.getTimes() + ",";
     }
 
     public enum State {
         JOINING,
         STARTED,
         FINISHED
+    }
+
+    public enum AskResult {
+        CARD_DOES_NOT_EXIST,
+        PLAYER_HAS_NO_CARD_IN_SAME_SET,
+        OPPONENT_HAS_CARD,
+        OPPONENT_DOES_NOT_HAVE_CARD
     }
 }
