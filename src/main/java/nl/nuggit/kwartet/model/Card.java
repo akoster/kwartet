@@ -1,10 +1,14 @@
 package nl.nuggit.kwartet.model;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Card implements Comparable<Card> {
 
     private static final int SET_SIZE = 4;
 
     private String times;
+    private List<String> others = new ArrayList<>();
     private String table;
     private String outcome;
 
@@ -24,6 +28,10 @@ public class Card implements Comparable<Card> {
 
     public void setTimes(String times) {
         this.times = times;
+    }
+
+    public List<String> getOthers() {
+        return others;
     }
 
     public String getTable() {
@@ -68,11 +76,7 @@ public class Card implements Comparable<Card> {
 
     public boolean inSetWith(Card other) {
         try {
-            int thisTimes = Integer.parseInt(times);
-            int otherTimes = Integer.parseInt(other.times);
-            boolean sameTimesSet = (thisTimes <= 5 && otherTimes <= 5) || (thisTimes >= 6 && otherTimes >= 6);
-            boolean sameTable = other.getTable().equals(table);
-            return sameTable && sameTimesSet;
+            return other.getTable().equals(table);
         } catch (NumberFormatException e) {
             return false;
         }

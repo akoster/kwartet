@@ -156,7 +156,7 @@ public class Game {
 
     public List<String> removeSets(Player player) {
         List<String> setDescriptions = new ArrayList<>();
-        List<List<Card>> sets = player.getSets();
+        List<List<Card>> sets = player.getCompleteSets();
         for (List<Card> set : sets) {
             setDescriptions.add(removeSet(player, set));
         }

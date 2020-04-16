@@ -37,10 +37,18 @@ function onPlayer() {
   $('#name').val(thisPlayer.name);
   let $cards = $('#cards');
   $cards.html('');
-  for (i in thisPlayer.cards) {
-    let card = thisPlayer.cards[i];
-    $cards.
-        append('<tr><td>' + card.description + '</td></tr>');
+  // for (i in thisPlayer.cards) {
+  //   let card = thisPlayer.cards[i];
+  //   $cards.append('<tr><td>' + card.description + '</td></tr>');
+  // }
+  for (i in thisPlayer.sets) {
+    let set = thisPlayer.sets[i];
+    $cards.append('<tr><td>');
+    for (j in set) {
+      let card = set[j];
+      $cards.append(card.description + ' ');
+    }
+    $cards.append('</td></tr>');
   }
 }
 

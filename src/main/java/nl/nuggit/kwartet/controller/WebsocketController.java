@@ -7,7 +7,6 @@ import java.util.Optional;
 import nl.nuggit.kwartet.exception.CannotJoinGameException;
 import nl.nuggit.kwartet.exception.NameTakenException;
 import nl.nuggit.kwartet.model.Ask;
-import nl.nuggit.kwartet.model.Card;
 import nl.nuggit.kwartet.model.Game;
 import nl.nuggit.kwartet.model.Player;
 import nl.nuggit.kwartet.model.ScoreBoard;

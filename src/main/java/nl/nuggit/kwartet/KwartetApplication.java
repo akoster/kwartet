@@ -1,5 +1,7 @@
 package nl.nuggit.kwartet;
 
+import java.util.Collections;
+
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -7,7 +9,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class KwartetApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(KwartetApplication.class, args);
+        SpringApplication app = new SpringApplication(KwartetApplication.class);
+        app.setDefaultProperties(Collections
+                .singletonMap("server.port", "8081"));
+        app.run(args);
     }
 
 }

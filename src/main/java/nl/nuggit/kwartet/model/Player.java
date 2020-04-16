@@ -6,6 +6,8 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Stream;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 public class Player {
 
     private final String id;
@@ -33,10 +35,12 @@ public class Player {
         return cards.stream();
     }
 
+    @JsonIgnore
     public void addCard(Card card) {
         cards.add(card);
     }
 
+    @JsonIgnore
     public boolean removeCard(Card card) {
         return cards.remove(card);
     }
@@ -45,10 +49,23 @@ public class Player {
         return score;
     }
 
+    @JsonIgnore
     public void increaseScore() {
         score++;
     }
 
+    @JsonIgnore
+    public List<List<Card>> getCompleteSets() {
+        List<List<Card>> sets = getSets();
+        removeIncompleteSets(sets);
+        return sets;
+    }
+
+    private void removeIncompleteSets(List<List<Card>> sets) {
+        sets.removeIf(set -> set.size() < set.get(0).getSetSize());
+    }
+
+    //    @JsonProperty("groupedCards")
     public List<List<Card>> getSets() {
         List<List<Card>> sets = new ArrayList<>();
         if (!cards.isEmpty()) {
@@ -65,7 +82,6 @@ public class Player {
             }
             addToSets(card, sets);
         }
-        sets.removeIf(set -> set.size() < set.get(0).getSetSize());
     }
 
     private void addToSets(Card card, List<List<Card>> sets) {
@@ -80,9 +96,9 @@ public class Player {
     }
 
     private List<Card> createNewSetWith(Card firstCard) {
-        List<Card> firstCompleted = new ArrayList<>();
-        firstCompleted.add(firstCard);
-        return firstCompleted;
+        List<Card> set = new ArrayList<>();
+        set.add(firstCard);
+        return set;
     }
 
     @Override
